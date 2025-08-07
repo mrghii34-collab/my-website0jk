@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Simple Browser</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin-top: 100px;
+      padding: 20px;
+    }
+    #blocked, #off {
+      color: red;
+      font-size: 20px;
+      margin-top: 20px;
+    }
+    input {
+      width: 80%;
+      padding: 15px;
+      font-size: 18px;
+      border: 2px solid #ccc;
+      border-radius: 8px;
+    }
+    button {
+      margin-top: 20px;
+      padding: 12px 30px;
+      font-size: 18px;
+      background-color: #0f9d58;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+  </style>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+</head>
+<body>
+
+  <h2 id="heading">🔍 Loading...</h2>
+  <div id="off" class="hidden"></div>
+
+  <div id="browserBox">
+    <input type="text" id="searchBox" placeholder="Type something to search...">
+    <br>
+    <button id="searchButton" onclick="searchNow()">Search</button>
+    <div id="blocked" class="hidden"></div>
+  </div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyCtDWs_Ft0e2NcU-dtwaWPfy-gAXa0azQg",
+      authDomain: "tanzim-main-admin-app.firebaseapp.com",
+      databaseURL: "https://tanzim-main-admin-app-default-rtdb.firebaseio.com",
+      projectId: "tanzim-main-admin-app",
+      storageBucket: "tanzim-main-admin-app.firebasestorage.app",
+      messagingSenderId: "12436676722",
+      appId: "1:12436676722:web:f066ffbc343f0117eea2eb",
+      measurementId: "G-QKK68SK6BN"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    let blockedList = [];
+
+    db.ref("browserApp/settings").on("value", (snap) => {
+      const data = snap.val();
+      if (data) {
+        document.getElementById("heading").innerText = data.title || "🔍 Search";
+        document.getElementById("searchButton").innerText = data.button || "Search";
+
+        blockedList = (data.blockedSites || "").split(",").map(s => s.trim().toLowerCase());
+
+        if (data.status === "off") {
+          document.getElementById("off").innerText = data.offMessage || "⚠️ এডমিন দ্বারা বন্ধ করা হয়েছে।";
+          document.getElementById("off").classList.remove("hidden");
+          document.getElementById("browserBox").style.display = "none";
+        } else {
+          document.getElementById("off").classList.add("hidden");
+          document.getElementById("browserBox").style.display = "block";
+        }
+      }
+    });
+
+    function searchNow() {
+      const query = document.getElementById('searchBox').value.trim();
+      if (!query) return;
+
+      const domain = extractDomain(query);
+      const blocked = blockedList.some(site => domain.includes(site));
+
+      if (blocked) {
+        document.getElementById("blocked").innerText = "🚫 এই সাইটটি এডমিন দ্বারা ব্লক করা হয়েছে।";
+        document.getElementById("blocked").classList.remove("hidden");
+      } else {
+        const searchUrl = "https://www.google.com/search?q=" + encodeURIComponent(query);
+        window.location.href = searchUrl;
+      }
+    }
+
+    function extractDomain(text) {
+      try {
+        const url = new URL(text.includes("http") ? text : "https://" + text);
+        return url.hostname.toLowerCase();
+      } catch {
+        return text.toLowerCase();
+      }
+    }
+  </script>
+
+</body>
+</html>
